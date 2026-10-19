@@ -86,10 +86,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   width: 220px; flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--line);
   padding: 18px 12px; position: sticky; top: 0; height: 100vh;
 }
-.brand { display: flex; gap: 10px; align-items: center; padding: 0 8px 18px; }
-.logo { width: 34px; height: 34px; border-radius: 9px; background: var(--brand); color: var(--brand-ink); display: grid; place-items: center; font-weight: 800; }
-.brand-name { font-weight: 700; }
-.brand-sub { font-size: 12px; color: var(--muted); }
+.brand { display: flex; flex-direction: column; gap: 8px; padding: 4px 8px 18px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.brand picture { display: block; }
+.brand-logo { display: block; width: 100%; max-width: 180px; height: auto; }
+.brand-sub { font-size: 11.5px; color: var(--muted); font-weight: 550; letter-spacing: 0.02em; }
 nav { display: flex; flex-direction: column; gap: 2px; }
 nav a {
   display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
@@ -248,7 +248,8 @@ tr.row-soon td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
 @media (max-width: 760px) {
   .app { flex-direction: column; }
   .sidebar { width: 100%; height: auto; position: sticky; top: 0; z-index: 20; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--line); }
-  .brand { padding: 0 4px 8px; }
+  .brand { flex-direction: row; align-items: center; justify-content: space-between; padding: 0 4px 8px; margin-bottom: 6px; }
+  .brand-logo { max-width: 120px; }
   nav { flex-direction: row; overflow-x: auto; gap: 4px; scrollbar-width: none; }
   nav a { white-space: nowrap; padding: 7px 10px; }
   main { padding: 16px 16px 40px; }

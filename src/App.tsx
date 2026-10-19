@@ -50,11 +50,11 @@ export default function App() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <div className="logo">✓</div>
-          <div>
-            <div className="brand-name">ISO Compliance</div>
-            <div className="brand-sub">9001 · 45001</div>
-          </div>
+          <picture>
+            <source srcSet="/logo-on-dark.png" media="(prefers-color-scheme: dark)" />
+            <img className="brand-logo" src="/logo-on-light.png" alt="Black Gold Security" />
+          </picture>
+          <div className="brand-sub">ISO 9001 · ISO 45001 compliance</div>
         </div>
         <nav>
           {PAGES.map((p) => (
