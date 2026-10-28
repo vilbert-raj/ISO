@@ -28,7 +28,9 @@ function readHash(): PageId {
   return (PAGES.find((p) => p.id === h)?.id ?? 'overview') as PageId;
 }
 
-const SYNC_LABEL = { local: 'Saved in this browser only', loading: 'Loading…', live: 'Live · shared with team', saving: 'Saving…', error: 'Not saved' } as const;
+const BAD_TABS: string[] = ['calendar', 'records', 'audits'];
+
+const SYNC_LABEL = { local: 'Browser only', loading: 'Loading…', live: 'Live', saving: 'Saving…', error: 'Not saved' } as const;
 
 export default function App() {
   const { data, sync, error, teamMode, reload } = useStore();
@@ -61,54 +63,61 @@ export default function App() {
 
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <picture>
-            <source srcSet="/logo-on-dark.png" media="(prefers-color-scheme: dark)" />
-            <img className="brand-logo" src="/logo-on-light.png" alt="Black Gold Security" />
-          </picture>
-          <div className="brand-sub">ISO 9001 · ISO 45001 compliance</div>
+      <header className="band">
+        <div className="wrap">
+          <div className="brand-row">
+            <img className="brand-logo" src="/logo-on-dark.png" alt="Black Gold Security" />
+            <div className="brand-text">
+              <div className="brand-title">ISO Compliance Board</div>
+              <div className="brand-sub">{data.settings.company} · security guarding, mobile patrol &amp; security solutions</div>
+            </div>
+            <div className="brand-right">
+              <span className="std">ISO 9001:2015</span>
+              <span className="std">ISO 45001:2018</span>
+              <span className="band-date">{fmtDate(today())}</span>
+              <span className={`sync sync-${sync}`}>{SYNC_LABEL[sync]}</span>
+              {teamMode && email && (
+                <span className="user-box">
+                  <span className="user-email">{email}</span>
+                  <button className="btn band-btn small" onClick={signOut}>Sign out</button>
+                </span>
+              )}
+            </div>
+          </div>
+          <nav className="tabs" aria-label="Sections">
+            {PAGES.map((p) => (
+              <a key={p.id} href={'#' + p.id} aria-current={page === p.id ? 'page' : undefined} onClick={() => window.scrollTo(0, 0)}>
+                {p.label}
+                {!!badges[p.id] && <span className={`cnt ${BAD_TABS.includes(p.id) ? 'bad' : ''}`}>{badges[p.id]}</span>}
+              </a>
+            ))}
+          </nav>
         </div>
-        <nav>
-          {PAGES.map((p) => (
-            <a key={p.id} href={'#' + p.id} className={page === p.id ? 'active' : ''} onClick={() => window.scrollTo(0, 0)}>
-              <span className="nav-icon" aria-hidden>{p.icon}</span>
-              <span>{p.label}</span>
-              {!!badges[p.id] && <span className="nav-badge">{badges[p.id]}</span>}
-            </a>
-          ))}
-        </nav>
-        {teamMode && email && (
-          <div className="user-box">
-            <span>{email}</span>
-            <button className="btn ghost small" onClick={signOut}>Sign out</button>
-          </div>
-        )}
-      </aside>
+      </header>
       <main>
-        <header className="topbar">
-          <div>
-            <h1>{current.label}</h1>
-            <div className="muted small">{data.settings.company} · {fmtDate(today())}</div>
-          </div>
-          <span className={`sync sync-${sync}`}>{SYNC_LABEL[sync]}</span>
-        </header>
-        {sync === 'error' && (
-          <div className="banner-error" role="alert">
-            <span>{error || 'Your last change was not saved.'}</span>
-            <button className="btn small" onClick={reload}>Reload data</button>
-          </div>
-        )}
-        {page === 'overview' && <Overview go={go} />}
-        {page === 'calendar' && <CalendarView />}
-        {page === 'clauses' && <ClausesView />}
-        {page === 'audits' && <AuditsView />}
-        {page === 'safety' && <SafetyView />}
-        {page === 'objectives' && <ObjectivesView />}
-        {page === 'registers' && <RegistersView />}
-        {page === 'records' && <RecordsView />}
-        {page === 'actions' && <ActionsView />}
-        {page === 'settings' && <SettingsView />}
+        <div className="wrap">
+          {page !== 'overview' && (
+            <header className="topbar">
+              <h1>{current.label}</h1>
+            </header>
+          )}
+          {sync === 'error' && (
+            <div className="banner-error" role="alert">
+              <span>{error || 'Your last change was not saved.'}</span>
+              <button className="btn small" onClick={reload}>Reload data</button>
+            </div>
+          )}
+          {page === 'overview' && <Overview go={go} />}
+          {page === 'calendar' && <CalendarView />}
+          {page === 'clauses' && <ClausesView />}
+          {page === 'audits' && <AuditsView />}
+          {page === 'safety' && <SafetyView />}
+          {page === 'objectives' && <ObjectivesView />}
+          {page === 'registers' && <RegistersView />}
+          {page === 'records' && <RecordsView />}
+          {page === 'actions' && <ActionsView />}
+          {page === 'settings' && <SettingsView />}
+        </div>
       </main>
     </div>
   );
