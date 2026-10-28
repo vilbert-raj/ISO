@@ -27,10 +27,57 @@ export function riskScore(l: number, s: number): number {
   return (Number(l) || 0) * (Number(s) || 0);
 }
 
+/** BGS-P13 HIRARC: 3×3 matrix – Low 1–2, Medium 3–4, High 6–9. */
+export const RISK_SCALE = 3;
 export function riskLevel(score: number): 'High' | 'Medium' | 'Low' {
-  if (score >= 15) return 'High';
-  if (score >= 8) return 'Medium';
+  if (score >= 6) return 'High';
+  if (score >= 3) return 'Medium';
   return 'Low';
+}
+
+export function addMonths(date: string, months: number): string {
+  if (!date) return '';
+  const [y, m, d] = date.split('-').map(Number);
+  const t = new Date(y, m - 1 + months, d);
+  if (t.getDate() !== d) t.setDate(0);
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+}
+
+/** "YYYY-MM" for a date string, or the current month. */
+export function monthKey(date = today()): string {
+  return date.slice(0, 7);
+}
+
+export function monthLabel(key: string): string {
+  const [y, m] = key.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+}
+
+export function activityDue(a: { fixedDue: string; lastDone: string; frequencyMonths: number }): string {
+  if (a.fixedDue) return a.fixedDue;
+  if (!a.lastDone || !Number(a.frequencyMonths)) return '';
+  return addMonths(a.lastDone, Number(a.frequencyMonths));
+}
+
+export type DueStatus = 'Overdue' | 'Due soon' | 'On track' | 'Date needed';
+export function activityStatus(a: { fixedDue: string; lastDone: string; frequencyMonths: number }): DueStatus {
+  const due = activityDue(a);
+  if (!due) return 'Date needed';
+  const n = daysUntil(due);
+  if (n < 0) return 'Overdue';
+  if (n <= 30) return 'Due soon';
+  return 'On track';
+}
+
+export function frequencyLabel(n: number): string {
+  n = Number(n) || 0;
+  if (!n) return 'One-off';
+  if (n === 1) return 'Monthly';
+  if (n === 3) return 'Quarterly';
+  if (n === 6) return 'Every 6 months';
+  if (n === 12) return 'Yearly';
+  if (n % 12 === 0) return `Every ${n / 12} years`;
+  return `Every ${n} months`;
 }
 
 export const CLOSED_FINDING = 'Closed';

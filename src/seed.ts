@@ -21,6 +21,10 @@ export function emptyData(): AppData {
     documents: [],
     training: [],
     objectives: [],
+    activities: [],
+    legal: [],
+    risks: [],
+    actions: [],
   };
 }
 

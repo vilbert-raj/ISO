@@ -97,8 +97,15 @@ export interface Training {
   status: string; // Scheduled / Completed / Expired
 }
 
+export interface MonthResult {
+  status: 'A' | 'NA' | 'IP'; // Achieved / Not achieved / In progress
+  value?: number;
+  note?: string;
+}
+
 export interface Objective {
   id: string;
+  code?: string;
   standard: string;
   objective: string;
   kpi: string;
@@ -108,6 +115,69 @@ export interface Objective {
   unit: string;
   owner: string;
   due: string;
+  /** monthly results keyed "YYYY-MM" */
+  results?: Record<string, MonthResult>;
+  frequency?: string;
+  note?: string;
+  order?: number;
+}
+
+/** Recurring compliance obligation (audits, reviews, drills, inspections …) */
+export interface Activity {
+  id: string;
+  title: string;
+  standard: string; // ISO 9001 / ISO 45001 / Integrated
+  clause: string;
+  reference: string; // procedure / legal source
+  frequencyMonths: number; // 0 = one-off
+  owner: string;
+  lastDone: string;
+  fixedDue: string; // overrides lastDone + frequency
+  evidence: string;
+  notes: string;
+}
+
+/** Legal register & evaluation of compliance (BGS-F28) */
+export interface LegalItem {
+  id: string;
+  no: number;
+  law: string;
+  ref: string;
+  title: string;
+  requirement: string;
+  status: string; // Compliant / In progress / Not compliant / No case so far / Not assessed
+  evaluatedOn: string;
+  remarks: string;
+}
+
+/** Risk & opportunity register (BGS-F11) */
+export interface RiskItem {
+  id: string;
+  no: number;
+  issue: string;
+  riskOpportunity: string;
+  type: string; // Risk / Opportunity / Risk & opportunity
+  rootCause: string;
+  currentAction: string;
+  requiredAction: string;
+  level: string; // High / Medium / Low
+  owner: string;
+  status: string; // Action planned / Controls in place / Closed
+  reviewDate: string;
+}
+
+/** Follow-up actions that are not formal NCRs */
+export interface ActionRec {
+  id: string;
+  title: string;
+  detail: string;
+  owner: string;
+  dueDate: string;
+  priority: string; // High / Medium / Low
+  status: string; // Open / In progress / Done
+  standard: string;
+  link: string;
+  source: string;
 }
 
 export interface Settings {
@@ -129,6 +199,10 @@ export interface AppData {
   documents: DocRecord[];
   training: Training[];
   objectives: Objective[];
+  activities: Activity[];
+  legal: LegalItem[];
+  risks: RiskItem[];
+  actions: ActionRec[];
 }
 
 export type CollectionKey = Exclude<keyof AppData, 'version' | 'settings'>;

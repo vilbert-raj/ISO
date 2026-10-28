@@ -1,6 +1,6 @@
 import { section } from './clauses';
 import type { AppData, ClauseRecord, Standard } from './types';
-import { CLOSED_FINDING, daysUntil, isLTI, isRecordable, objectiveOnTrack, riskLevel, riskScore, today } from './util';
+import { activityDue, activityStatus, CLOSED_FINDING, daysUntil, isLTI, isRecordable, objectiveOnTrack, riskLevel, riskScore, today } from './util';
 
 export function clauseCompliance(clauses: ClauseRecord[], standard: Standard) {
   const list = clauses.filter((c) => c.standard === standard && c.status !== 'Not applicable');
@@ -62,6 +62,17 @@ export function computeMetrics(data: AppData) {
 
   const objOnTrack = data.objectives.filter(objectiveOnTrack);
 
+  const lm = new Date(); lm.setDate(1); lm.setMonth(lm.getMonth() - 1);
+  const lastMonth = `${lm.getFullYear()}-${String(lm.getMonth() + 1).padStart(2, '0')}`;
+  const objUnreported = data.objectives.filter((o) => o.results && !o.results[lastMonth]);
+  const activitiesOverdue = data.activities.filter((a) => activityStatus(a) === 'Overdue');
+  const activitiesSoon = data.activities.filter((a) => activityStatus(a) === 'Due soon');
+  const activitiesNoDate = data.activities.filter((a) => activityStatus(a) === 'Date needed');
+  const openActions = data.actions.filter((a) => a.status !== 'Done');
+  const actionsOverdue = openActions.filter((a) => daysUntil(a.dueDate) < 0);
+  const legalOpen = data.legal.filter((l) => !['Compliant', 'No case so far'].includes(l.status));
+  const legalPct = data.legal.length ? (data.legal.length - legalOpen.length) / data.legal.length : null;
+
   // Monthly incident counts for the last 12 months
   const months: { key: string; label: string; lti: number; other: number; near: number }[] = [];
   const now = new Date();
@@ -81,13 +92,23 @@ export function computeMetrics(data: AppData) {
   // Unified "needs attention" list
   const actions: ActionItem[] = [];
   for (const f of overdueFindings) actions.push({ kind: f.grade || 'Finding', label: `${f.ref} – ${f.description}`, date: f.due, days: daysUntil(f.due), page: 'audits' });
-  for (const d of docsOverdue) actions.push({ kind: 'Doc review', label: `${d.code} ${d.title}`, date: d.nextReview, days: daysUntil(d.nextReview), page: 'records' });
+  if (docsOverdue.length) {
+    const oldest = [...docsOverdue].sort((a, b) => a.nextReview.localeCompare(b.nextReview))[0];
+    actions.push({ kind: 'Doc review', label: docsOverdue.length === 1 ? `${oldest.code} ${oldest.title}` : `${docsOverdue.length} documents past their 2-year review`, date: oldest.nextReview, days: Math.max(daysUntil(oldest.nextReview), -1), page: 'records' });
+  }
   for (const t of trainingExpired) actions.push({ kind: 'Training expired', label: `${t.employee} – ${t.course}`, date: t.expiry, days: daysUntil(t.expiry), page: 'records' });
-  for (const h of hazardsReviewDue) actions.push({ kind: 'Risk review', label: `${h.activity}: ${h.hazard}`, date: h.reviewDate, days: daysUntil(h.reviewDate), page: 'safety' });
+  const hzAreas = [...new Set(hazardsReviewDue.map((h) => h.activity.split(' – ')[0]))];
+  if (hazardsReviewDue.length) {
+    const oldest = [...hazardsReviewDue].sort((a, b) => a.reviewDate.localeCompare(b.reviewDate))[0];
+    actions.push({ kind: 'Risk review', label: hazardsReviewDue.length === 1 ? `${oldest.activity}: ${oldest.hazard}` : `HIRARC review overdue: ${hzAreas.join(', ')} (${hazardsReviewDue.length} hazards)`, date: oldest.reviewDate, days: daysUntil(oldest.reviewDate), page: 'safety' });
+  }
   for (const a of data.audits.filter((a) => a.status === 'Planned' && daysUntil(a.plannedDate) < 0)) actions.push({ kind: 'Audit overdue', label: a.title, date: a.plannedDate, days: daysUntil(a.plannedDate), page: 'audits' });
   for (const [label, date] of [['ISO 9001 certificate expiry', data.settings.cert9001Expiry], ['ISO 45001 certificate expiry', data.settings.cert45001Expiry]] as const) {
     if (date && daysUntil(date) <= 90) actions.push({ kind: 'Certificate', label, date, days: daysUntil(date), page: 'settings' });
   }
+  for (const a of activitiesOverdue) { const due = activityDue(a); actions.push({ kind: 'Calendar', label: a.title, date: due, days: daysUntil(due), page: 'calendar' }); }
+  for (const a of actionsOverdue) actions.push({ kind: 'Action', label: a.title, date: a.dueDate, days: daysUntil(a.dueDate), page: 'actions' });
+  for (const a of activitiesSoon) { const due = activityDue(a); actions.push({ kind: 'Due soon', label: a.title, date: due, days: daysUntil(due), page: 'calendar' }); }
   actions.sort((a, b) => a.days - b.days);
 
   return {
@@ -97,5 +118,6 @@ export function computeMetrics(data: AppData) {
     ytd, ltis, recordables, nearMisses, ltifr, trir, daysSinceLTI, openIncidents, hours,
     highRisks, hazardsReviewDue, docsOverdue, docsSoon, trainingExpired, trainingSoon, objOnTrack,
     months, actions,
+    lastMonth, objUnreported, activitiesOverdue, activitiesSoon, activitiesNoDate, openActions, actionsOverdue, legalOpen, legalPct,
   };
 }

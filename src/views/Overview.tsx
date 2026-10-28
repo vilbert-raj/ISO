@@ -23,6 +23,9 @@ export function Overview({ go }: { go: (page: string) => void }) {
         <Stat label="Days since last LTI" value={m.daysSinceLTI ?? '—'} sub={`${m.ltis.length} LTI · ${m.ytd.length} incidents YTD`} tone={m.ltis.length ? 'warn' : 'good'} />
         <Stat label="LTIFR (YTD)" value={m.ltifr == null ? '—' : m.ltifr.toFixed(2)} sub={m.hours ? `per 1M hrs · TRIR ${m.trir!.toFixed(2)}` : 'Set hours worked in Settings'} />
         <Stat label="High residual risks" value={m.highRisks.length} sub={`${m.hazardsReviewDue.length} risk reviews overdue`} tone={m.highRisks.length ? 'bad' : 'good'} />
+        <Stat label="Calendar items overdue" value={m.activitiesOverdue.length} sub={`${m.activitiesSoon.length} due in 30 days · ${m.activitiesNoDate.length} need a date`} tone={m.activitiesOverdue.length ? 'bad' : 'good'} />
+        <Stat label="Open actions" value={m.openActions.length} sub={`${m.actionsOverdue.length} overdue`} tone={m.actionsOverdue.length ? 'bad' : m.openActions.length ? 'warn' : 'good'} />
+        <Stat label="Legal compliance" value={m.legalPct == null ? '—' : pct(m.legalPct)} sub={`${m.legalOpen.length} items not closed`} tone={m.legalOpen.length ? 'warn' : 'good'} />
       </div>
 
       <Card title="Clause readiness by section" className="span-2">
@@ -71,10 +74,20 @@ export function Overview({ go }: { go: (page: string) => void }) {
         )}
       </Card>
 
-      <Card title={<>Objectives <span className="count">{m.objOnTrack.length}/{data.objectives.length} on track</span></>} actions={<button className="btn ghost" onClick={() => go('records')}>Edit</button>}>
+      <Card title={<>Objectives <span className="count">{m.objUnreported.length ? `${m.objUnreported.length} not reported` : 'up to date'}</span></>} actions={<button className="btn ghost" onClick={() => go('objectives')}>Update</button>}>
         {data.objectives.length === 0 ? <Empty>No objectives yet.</Empty> : (
           <ul className="objectives">
-            {data.objectives.map((o) => {
+            {[...data.objectives].sort((a, b) => (a.order ?? 99) - (b.order ?? 99)).map((o) => {
+              if (o.results) {
+                const months: string[] = [];
+                for (let i = 12; i >= 1; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); }
+                return (
+                  <li key={o.id}>
+                    <div className="o-title">{o.code ? <span className="muted small">{o.code} </span> : null}{o.objective}</div>
+                    <div className="dots" aria-label="Last 12 months">{months.map((mm) => { const r = o.results![mm]; return <i key={mm} className={`dot ${r ? 'oc-' + r.status : ''}`} title={`${mm}: ${r ? ({ A: 'Achieved', NA: 'Not achieved', IP: 'In progress' } as Record<string, string>)[r.status] : 'not reported'}`} />; })}</div>
+                  </li>
+                );
+              }
               const ok = objectiveOnTrack(o);
               return (
                 <li key={o.id}>
@@ -175,11 +188,11 @@ function RiskMatrix({ cells }: { cells: [number, number][] }) {
     <div className="matrix-wrap">
       <div className="matrix-y">Likelihood →</div>
       <div className="matrix">
-        {[5, 4, 3, 2, 1].map((l) => [1, 2, 3, 4, 5].map((s) => {
+        {[3, 2, 1].map((l) => [1, 2, 3].map((s) => {
           const score = riskScore(l, s);
           const n = count(l, s);
           return (
-            <div key={`${l}-${s}`} className={`mcell ${score >= 15 ? 'm-high' : score >= 8 ? 'm-med' : 'm-low'}`} title={`L${l} × S${s} = ${score}`}>
+            <div key={`${l}-${s}`} className={`mcell ${score >= 6 ? 'm-high' : score >= 3 ? 'm-med' : 'm-low'}`} title={`L${l} × S${s} = ${score}`}>
               {n > 0 && <span className="mdot">{n}</span>}
             </div>
           );

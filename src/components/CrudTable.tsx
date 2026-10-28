@@ -107,7 +107,7 @@ export function CrudTable<K extends CollectionKey>({ title, collection, fields, 
                 return (
                   <tr key={rec.id as string} className={flag ? 'row-' + flag : ''} onClick={() => setEditing(r)} tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setEditing(r)}>
                     {tableFields.map((f) => (
-                      <td key={f.key} className={f.type === 'number' ? 'num' : f.type === 'date' || f.key === 'ref' || f.key === 'code' || f.key === 'clause' ? 'nowrap' : ''}>
+                      <td key={f.key} className={f.type === 'number' ? 'num' : f.type === 'date' || f.key === 'ref' || f.key === 'code' || f.key === 'clause' || f.key === 'standard' ? 'nowrap' : ''}>
                         {f.render ? f.render(r) : f.badge ? (rec[f.key] ? <Badge>{String(rec[f.key])}</Badge> : '—') : f.type === 'date' ? fmtDate(String(rec[f.key] ?? '')) : String(rec[f.key] ?? '') || '—'}
                       </td>
                     ))}
