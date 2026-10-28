@@ -3,7 +3,7 @@ import { useAuth } from '../auth';
 import { Badge, Card } from '../components/ui';
 import { emptyData, sampleData } from '../seed';
 import { normalise, useStore } from '../store';
-import { supabase } from '../supabase';
+import { REQUIRE_LOGIN, supabase } from '../supabase';
 import { downloadFile, today } from '../util';
 
 export function SettingsView() {
@@ -34,7 +34,7 @@ export function SettingsView() {
       <Card title="Data">
         <p className="muted small">
           {teamMode
-            ? 'Data is stored in the shared team database and updates live for everyone. Export a backup now and then for your records.'
+            ? `Data is stored in the shared team database and updates live for everyone.${REQUIRE_LOGIN ? '' : ' Sign-in is switched off, so anyone with the link can view and edit.'} Export a backup now and then for your records.`
             : 'Data is saved in this browser only. Export a backup regularly, or move it to another computer with Import.'}
         </p>
         <div className="btn-col">
@@ -85,7 +85,7 @@ export function SettingsView() {
         </div>
       </Card>
 
-      {teamMode && <TeamCard />}
+      {REQUIRE_LOGIN && <TeamCard />}
     </div>
   );
 }

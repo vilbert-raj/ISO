@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { REQUIRE_LOGIN, supabase } from './supabase';
 
 interface Member {
   email: string;
@@ -20,18 +20,18 @@ export const useAuth = () => useContext(Ctx);
 
 /** Sign-in gate. Without Supabase configured it lets everyone through (browser-only mode). */
 export function AuthGate({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null | undefined>(supabase ? undefined : null);
+  const [session, setSession] = useState<Session | null | undefined>(REQUIRE_LOGIN ? undefined : null);
   const [member, setMember] = useState<Member | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase || !REQUIRE_LOGIN) return;
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!supabase || !session) {
+    if (!supabase || !REQUIRE_LOGIN || !session) {
       setMember(undefined);
       return;
     }
@@ -44,7 +44,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       .then(({ data }) => setMember((data as Member) ?? null));
   }, [session]);
 
-  if (!supabase) {
+  if (!supabase || !REQUIRE_LOGIN) {
     return <Ctx.Provider value={{ email: '', member: null, isAdmin: true, signOut: () => {} }}>{children}</Ctx.Provider>;
   }
 
