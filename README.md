@@ -11,7 +11,11 @@ A web dashboard for monitoring and tracking compliance with **ISO 9001:2015 (Qua
 | **Audits & CAPA** | Audit programme (internal, surveillance, supplier, management review) and the findings / corrective-action log |
 | **OH&S** | Incident & near-miss log, hazard & risk register (HIRARC, 5×5 matrix, initial vs residual risk) |
 | **Records** | Controlled documents with review dates, training & competence with expiry dates, quality & OH&S objectives |
-| **Settings** | Company details, certificate expiry dates, hours worked (for LTIFR), backup export and import |
+| **Calendar** | Recurring obligations (audits, management review, SHC meetings, drills, inspections, HIRARC and register reviews) with last done / next due |
+| **Objectives** | Quality and OSH objectives with a month-by-month results grid |
+| **Legal & risks** | Legal register & evaluation of compliance (BGS-F28) and risk & opportunity register (BGS-F11) |
+| **Actions** | Follow-up actions that are not formal NCRs |
+| **Settings** | Company details, certificate expiry dates, hours worked (for LTIFR), team members, backup export and import |
 
 Every table supports search, filters, a "needs attention" filter, add/edit/delete, and CSV export.
 
@@ -30,11 +34,12 @@ npm run dev
 
 ## Where the data is stored
 
-Version 0.1 saves data in **the browser** (localStorage), so it runs on Vercel with no database setup. Each person's browser therefore holds its own copy. Use **Settings → Export backup** regularly, and **Import** to move data between computers.
+Team data lives in **Supabase** (one shared database with sign-in). Only people listed under
+**Settings → Team members** can sign in and see records, and every change is logged with who
+made it. Setup steps are in [`supabase/README.md`](supabase/README.md).
 
-The app loads with demo data. Use **Settings → Start blank** to begin with your own records.
-
-**Next step for team use:** add a shared database, such as Vercel Postgres/Neon or Supabase, plus sign-in. All reads and writes go through `src/store.tsx` (`load()` and `save()`), so only that file needs to change.
+Without Supabase settings (e.g. running locally with no `.env.local`), the app falls back to
+browser-only storage with demo data.
 
 ## Project structure
 
@@ -42,9 +47,13 @@ The app loads with demo data. Use **Settings → Start blank** to begin with you
 src/
   clauses.ts        clause lists for ISO 9001 and ISO 45001
   types.ts          data model
-  store.tsx         data layer (persistence)
+  store.tsx         data layer (Supabase, or localStorage fallback)
+  auth.tsx          sign-in gate and team membership
+  supabase.ts       Supabase client
   metrics.ts        KPIs and "needs attention" logic
   seed.ts           demo data
   components/       CrudTable (generic register) and UI bits
-  views/            Overview, Modules (Clauses/Audits/OH&S/Records), Settings
+  views/            Overview, Modules (Clauses/Audits/OH&S/Records), Compliance (Calendar/Objectives/Registers/Actions), Settings
+supabase/
+  schema.sql        tables, access rules, change history
 ```

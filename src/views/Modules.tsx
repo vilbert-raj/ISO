@@ -3,10 +3,10 @@ import { Badge, Card, Progress } from '../components/ui';
 import { clauseCompliance } from '../metrics';
 import { useStore } from '../store';
 import { CLAUSE_STATUSES, STANDARDS, type Audit, type ClauseRecord, type DocRecord, type Finding, type Hazard, type Incident, type Objective, type Training } from '../types';
-import { daysUntil, objectiveOnTrack, objectiveProgress, riskLevel, riskScore, today } from '../util';
+import { daysUntil, riskLevel, riskScore, today } from '../util';
 
 const STD_OPTS = ['ISO 9001', 'ISO 45001', 'Integrated'];
-const SCALE = ['1', '2', '3', '4', '5'];
+const SCALE = ['1', '2', '3'];
 
 const clauseCmp = (a: string, b: string) => {
   const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
@@ -79,8 +79,8 @@ const findingFields: Field<Finding>[] = [
   { key: 'ref', label: 'Ref', required: true },
   { key: 'standard', label: 'Standard', type: 'select', options: STD_OPTS },
   { key: 'clause', label: 'Clause' },
-  { key: 'grade', label: 'Grade', type: 'select', options: ['Major NC', 'Minor NC', 'Observation', 'OFI'], badge: true },
-  { key: 'source', label: 'Source', type: 'select', options: ['Internal audit', 'External audit', 'Customer complaint', 'Incident', 'Management review', 'Other'] },
+  { key: 'grade', label: 'Grade', type: 'select', options: ['Major NC', 'Minor NC', 'Complaint', 'Observation', 'OFI'], badge: true },
+  { key: 'source', label: 'Source', type: 'select', options: ['Internal audit', 'External audit', 'Customer complaint', 'Incident', 'Management review', 'Supplier', 'Other'] },
   { key: 'description', label: 'Finding', required: true, inTable: true },
   { key: 'rootCause', label: 'Root cause', type: 'textarea' },
   { key: 'action', label: 'Corrective action', type: 'textarea' },
@@ -135,11 +135,11 @@ const hazardFields: Field<Hazard>[] = [
   { key: 'activity', label: 'Activity / area', required: true },
   { key: 'hazard', label: 'Hazard', required: true },
   { key: 'consequence', label: 'Consequence', inTable: false },
-  { key: 'likelihood', label: 'Likelihood (1–5)', type: 'select', options: SCALE, inTable: false },
-  { key: 'severity', label: 'Severity (1–5)', type: 'select', options: SCALE, inTable: false },
+  { key: 'likelihood', label: 'Likelihood (1–3)', type: 'select', options: SCALE, inTable: false },
+  { key: 'severity', label: 'Severity (1–3)', type: 'select', options: SCALE, inTable: false },
   { key: 'controls', label: 'Controls', type: 'textarea' },
-  { key: 'residualLikelihood', label: 'Residual likelihood (1–5)', type: 'select', options: SCALE, inTable: false },
-  { key: 'residualSeverity', label: 'Residual severity (1–5)', type: 'select', options: SCALE, inTable: false },
+  { key: 'residualLikelihood', label: 'Residual likelihood (1–3)', type: 'select', options: SCALE, inTable: false },
+  { key: 'residualSeverity', label: 'Residual severity (1–3)', type: 'select', options: SCALE, inTable: false },
   { key: 'owner', label: 'Owner' },
   { key: 'reviewDate', label: 'Next review', type: 'date' },
   { key: 'legalRef', label: 'Legal / other requirement', inTable: false },
@@ -175,8 +175,8 @@ export function SafetyView() {
         collection="hazards"
         fields={hazardFields}
         columns={hazardColumns}
-        intro="Risk = likelihood × severity on a 5×5 scale (High ≥ 15, Medium 8–14, Low ≤ 7). Record initial and residual (after controls) ratings (ISO 45001 6.1.2, 8.1.2)."
-        newItem={() => ({ activity: '', hazard: '', consequence: '', likelihood: 3, severity: 3, controls: '', residualLikelihood: 2, residualSeverity: 3, owner: '', reviewDate: '', legalRef: '' })}
+        intro="Risk = likelihood × severity on the BGS-P13 3×3 scale: Low 1–2 (green), Medium 3–4 (yellow), High 6–9 (red, action required). Likelihood 1 = once a year, 3 = more than 3 times a year. Severity 1 = first aid / ≤3 days MC, 3 = hospitalised >1 week or fatality. Record the rating with current controls and after recommended controls (ISO 45001 6.1.2, 8.1.2). Review at least yearly and after any incident (BGS-P07 4.2.7e)."
+        newItem={() => ({ activity: '', hazard: '', consequence: '', likelihood: 2, severity: 2, controls: '', residualLikelihood: 1, residualSeverity: 2, owner: '', reviewDate: '', legalRef: '' })}
         filterKeys={['owner']}
         sort={(a, b) => riskScore(b.residualLikelihood, b.residualSeverity) - riskScore(a.residualLikelihood, a.residualSeverity)}
         rowFlag={(r) => (daysUntil(r.reviewDate) < 0 ? 'overdue' : riskLevel(riskScore(r.residualLikelihood, r.residualSeverity)) === 'High' ? 'soon' : undefined)}
@@ -209,7 +209,8 @@ const trainingFields: Field<Training>[] = [
   { key: 'status', label: 'Status', type: 'select', options: ['Scheduled', 'Completed', 'Expired'], badge: true },
 ];
 
-const objectiveFields: Field<Objective>[] = [
+export const objectiveFields: Field<Objective>[] = [
+  { key: 'code', label: 'Code' },
   { key: 'standard', label: 'Standard', type: 'select', options: STD_OPTS },
   { key: 'objective', label: 'Objective', required: true },
   { key: 'kpi', label: 'KPI' },
@@ -219,22 +220,18 @@ const objectiveFields: Field<Objective>[] = [
   { key: 'direction', label: 'Direction', type: 'select', options: ['Higher is better', 'Lower is better'], inTable: false },
   { key: 'owner', label: 'Owner' },
   { key: 'due', label: 'Due', type: 'date' },
+  { key: 'frequency', label: 'Frequency', inTable: false },
+  { key: 'note', label: 'Note', type: 'textarea' },
 ];
 
 export function RecordsView() {
-  const objCols: Field<Objective>[] = [
-    ...objectiveFields.filter((f) => f.inTable !== false),
-    { key: 'id', label: 'Progress', render: (o) => (
-      <div className="prog-cell"><Progress value={objectiveProgress(o)} tone={objectiveOnTrack(o) ? 'good' : 'warn'} /><Badge>{objectiveOnTrack(o) ? 'On track' : 'Off track'}</Badge></div>
-    ) },
-  ];
   return (
     <div className="stack">
       <CrudTable
         title="Controlled documents"
         collection="documents"
         fields={docFields}
-        intro="Master list of documented information (7.5): policies, procedures, forms. Overdue reviews are highlighted."
+        intro="Document master list BGS-F19 (7.5). Every controlled document is reviewed at least once every 2 years (BGS-P09); next review = last review + 24 months. Overdue reviews are highlighted."
         newItem={() => ({ code: '', title: '', standard: 'Integrated', clause: '', version: '1.0', owner: '', lastReview: today(), nextReview: '', status: 'Draft' })}
         filterKeys={['standard', 'status', 'owner']}
         sort={(a, b) => (a.nextReview || '9').localeCompare(b.nextReview || '9')}
@@ -244,21 +241,11 @@ export function RecordsView() {
         title="Training & competence"
         collection="training"
         fields={trainingFields}
-        intro="Competence records (7.2). Certificates past expiry count as expired even if not marked so."
+        intro="Competence records (7.2): CSG/TNG guard training (PIKM), first aid (refresher every 3 years), ISO and OSH courses. Certificates past expiry count as expired even if not marked so."
         newItem={() => ({ employee: '', role: '', course: '', standard: 'ISO 45001', completed: '', expiry: '', status: 'Scheduled' })}
         filterKeys={['standard', 'status', 'course']}
         sort={(a, b) => (a.expiry || '9').localeCompare(b.expiry || '9')}
         rowFlag={(r) => (r.status === 'Expired' || daysUntil(r.expiry) < 0 ? 'overdue' : daysUntil(r.expiry) <= 30 ? 'soon' : undefined)}
-      />
-      <CrudTable
-        title="Quality & OH&S objectives"
-        collection="objectives"
-        fields={objectiveFields}
-        columns={objCols}
-        intro="Measurable objectives (ISO 9001 6.2 / ISO 45001 6.2). Update ‘Actual’ as results come in."
-        newItem={() => ({ standard: 'ISO 9001', objective: '', kpi: '', target: 0, actual: 0, direction: 'Higher is better', unit: '', owner: '', due: '' })}
-        filterKeys={['standard', 'owner']}
-        rowFlag={(o) => (!objectiveOnTrack(o) && daysUntil(o.due) < 0 ? 'overdue' : !objectiveOnTrack(o) ? 'soon' : undefined)}
       />
     </div>
   );

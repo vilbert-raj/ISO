@@ -8,6 +8,8 @@ const TONES: Record<string, Tone> = {
   'Not started': 'warn', Open: 'warn', 'Minor NC': 'warn', Medium: 'warn', Draft: 'warn', Observation: 'muted', OFI: 'muted',
   'Major NC': 'bad', Expired: 'bad', Overdue: 'bad', High: 'bad', 'Lost time injury': 'bad', 'Off track': 'bad', Fatality: 'bad',
   'Not applicable': 'muted', Cancelled: 'muted', Obsolete: 'muted',
+  'Due soon': 'warn', 'Date needed': 'muted', Compliant: 'good', 'No case so far': 'good', 'Not compliant': 'bad', 'Not assessed': 'muted',
+  'Action planned': 'warn', 'Controls in place': 'good', Done: 'good', Complaint: 'warn',
 };
 
 export function Badge({ children, tone }: { children: ReactNode; tone?: Tone }) {
