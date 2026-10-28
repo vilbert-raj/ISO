@@ -27,3 +27,11 @@ also written to `record_history` (who, when, before/after) for audit evidence.
   signs in often, connect your own SMTP under Authentication → Emails → SMTP Settings.
 - Without the two environment variables (e.g. `npm run dev` with no `.env.local`), the app
   runs in browser-only demo mode.
+
+## Sign-in switched off (current setting)
+
+`VITE_REQUIRE_LOGIN=false` in `.env.production` skips the sign-in screen, and
+`open-access.sql` lets visitors who are not signed in read and change records.
+Anyone with the website link can then see and edit the data.
+
+To require sign-in again: run `restore-login.sql`, set `VITE_REQUIRE_LOGIN=true`, and redeploy.

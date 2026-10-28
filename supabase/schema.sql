@@ -42,7 +42,7 @@ create table if not exists public.records (
 alter table public.records replica identity full;  -- so live deletes reach other browsers
 
 create or replace function public.touch_record() returns trigger
-language plpgsql as $$
+language plpgsql security definer set search_path = public as $$
 begin
   new.updated_at := now();
   new.updated_by := coalesce(lower(auth.jwt() ->> 'email'), new.updated_by);
